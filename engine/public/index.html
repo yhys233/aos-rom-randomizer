@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>晓月圆舞曲 CN 随机化器</title>
+<style>
+  :root {
+    --bg0: #0d1117;
+    --bg1: #161b22;
+    --bg2: #1f2630;
+    --border: #30363d;
+    --fg: #e6edf3;
+    --fg-dim: #8b949e;
+    --accent: #58a6ff;
+    --accent2: #d29922;
+    --good: #3fb950;
+    --card-w: 360px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { color-scheme: dark; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(88,166,255,.14), transparent 55%),
+      radial-gradient(900px 500px at 90% 110%, rgba(210,153,34,.10), transparent 55%),
+      var(--bg0);
+    color: var(--fg);
+    min-height: 100vh;
+    padding: 28px 16px 60px;
+  }
+  header {
+    max-width: 1240px; margin: 0 auto 22px;
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  }
+  header h1 {
+    font-size: 26px; letter-spacing: 1px;
+    background: linear-gradient(90deg, var(--accent), #c9e2ff);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  header .sub { color: var(--fg-dim); font-size: 13px; }
+  .card {
+    background: linear-gradient(180deg, rgba(31,38,48,.85), rgba(22,27,34,.9));
+    border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 18px 14px;
+  }
+  .grid {
+    display: grid; gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(var(--card-w), 1fr));
+    max-width: 1240px; margin: 0 auto;
+  }
+  .group h2 {
+    font-size: 14px; font-weight: 600; color: var(--fg);
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 12px; padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .group h2 .tag {
+    font-size: 10px; font-weight: 500; color: var(--fg-dim);
+    background: var(--bg2); border: 1px solid var(--border);
+    padding: 1px 7px; border-radius: 999px;
+  }
+  .opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 2px; }
+  .opt label { font-size: 14px; color: var(--fg); cursor: pointer; flex: 1; }
+  .opt .desc { font-size: 12px; color: var(--fg-dim); }
+  /* toggle switch */
+  .switch { position: relative; width: 42px; height: 24px; flex: 0 0 auto; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; inset: 0; cursor: pointer;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 999px; transition: .18s;
+  }
+  .slider::before {
+    content: ""; position: absolute; left: 2px; top: 2px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--fg-dim); transition: .18s;
+  }
+  .switch input:checked + .slider { background: var(--accent); border-color: var(--accent); }
+  .switch input:checked + .slider::before { transform: translateX(18px); background: #fff; }
+  .switch input:disabled + .slider { opacity: .45; cursor: not-allowed; }
+  .opt.disabled label { color: var(--fg-dim); opacity: .6; }
+  .opt.mutex-off label { color: var(--fg-dim); opacity: .6; }
+  .opt.mutex-off .desc { opacity: .6; }
+  .opt .preset-tag {
+    display: none; font-size: 10px; color: var(--accent);
+    border: 1px solid var(--accent); border-radius: 999px; padding: 0 6px; white-space: nowrap;
+  }
+  .opt.locked .preset-tag { display: inline-block; }
+
+  /* master (big-category) switch card */
+  .wide { grid-column: 1 / -1; }
+  .master {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; cursor: pointer;
+  }
+  .master .m-title { font-size: 16px; font-weight: 700; }
+  .master .m-desc { font-size: 12px; color: var(--fg-dim); margin-top: 3px; }
+  .master .switch { width: 54px; height: 30px; }
+  .master .slider::before { width: 24px; height: 24px; left: 2px; top: 2px; }
+  .master .switch input:checked + .slider::before { transform: translateX(24px); }
+  .sub {
+    margin-top: 14px; padding-top: 14px;
+    border-top: 1px dashed var(--border);
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 0 24px; transition: opacity .2s;
+  }
+  .sub.off { opacity: .35; }
+  .sub .subtitle { font-size: 12px; color: var(--fg-dim); margin-bottom: 6px; font-weight: 600; }
+
+  /* radio pills */
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+  .pills input { display: none; }
+  .pills label {
+    font-size: 13px; padding: 6px 14px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--bg2);
+    cursor: pointer; color: var(--fg-dim); transition: .15s; user-select: none;
+  }
+  .pills input:checked + label {
+    background: rgba(88,166,255,.18); border-color: var(--accent); color: var(--fg);
+  }
+  input[type="number"], input[type="text"], select {
+    background: var(--bg2); border: 1px solid var(--border); color: var(--fg);
+    border-radius: 8px; padding: 8px 12px; font-size: 14px; width: 100%; outline: none;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
+  .row3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; margin-top: 4px; }
+  .field label { font-size: 13px; color: var(--fg-dim); display: block; margin-bottom: 6px; }
+  /* actions */
+  .actions { max-width: 1240px; margin: 22px auto 0; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  #genBtn {
+    font-size: 15px; font-weight: 600; color: #0d1117;
+    background: linear-gradient(90deg, #58a6ff, #79c0ff);
+    border: none; border-radius: 10px; padding: 12px 34px; cursor: pointer;
+    transition: transform .12s, box-shadow .12s; letter-spacing: 2px;
+  }
+  #genBtn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(88,166,255,.35); }
+  #genBtn:disabled { opacity: .6; cursor: wait; transform: none; }
+  #status {
+    flex: 1; min-width: 240px; font-size: 13px; color: var(--fg-dim);
+    background: var(--bg1); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px; white-space: pre-wrap;
+    max-height: 220px; overflow: auto;
+  }
+  #status.ok { color: var(--good); }
+  .spin {
+    display: inline-block; width: 14px; height: 14px; margin-right: 8px;
+    border: 2px solid var(--fg-dim); border-top-color: var(--accent);
+    border-radius: 50%; animation: rot 0.7s linear infinite; vertical-align: -2px;
+  }
+  @keyframes rot { to { transform: rotate(360deg); } }
+  footer { max-width: 1240px; margin: 18px auto 0; font-size: 12px; color: var(--fg-dim); }
+  .hint { color: var(--accent2); font-size: 12px; margin-top: 8px; }
+
+  /* 长按介绍弹窗 */
+  .opt, .master, .pills label, .field label { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .popup {
+    position: fixed; z-index: 999; max-width: 320px; min-width: 210px;
+    background: var(--bg1); border: 1px solid var(--accent);
+    border-radius: 10px; box-shadow: 0 10px 34px rgba(0,0,0,.55);
+    padding: 10px 14px 12px; font-size: 12px;
+    opacity: 0; transform: translateY(6px); pointer-events: none;
+    transition: opacity .13s, transform .13s;
+  }
+  .popup.show { opacity: 1; transform: none; pointer-events: auto; }
+  .popup .popup-title { font-weight: 700; font-size: 13px; color: var(--accent); margin-bottom: 6px; padding-right: 16px; }
+  .popup .popup-text { line-height: 1.6; color: var(--fg); }
+  .popup .popup-close {
+    position: absolute; top: 6px; right: 10px; cursor: pointer;
+    color: var(--fg-dim); font-size: 16px; line-height: 1; padding: 2px 4px; border-radius: 4px;
+  }
+  .popup .popup-close:hover { color: var(--fg); background: var(--bg2); }
+  .lp-hint { color: var(--fg-dim); font-size: 11px; margin-left: 6px; font-weight: 400; }
+  @media (max-width: 820px) { .row2, .row3 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>晓月圆舞曲 CN 随机化器</h1>
+  <span class="sub">随机器有一定bug，当前怪物随机和地图随机一起开可能会出现地图贴图异常</span>
+</header>
+
+<div class="grid">
+  <!-- 随机范围 -->
+  <section class="card group wide">
+    <h2>随机范围 <span class="tag">必选</span></h2>
+    <div class="pills" id="typePills">
+      <input type="radio" name="random_type" value="3" id="t3" checked>
+      <label for="t3">全部随机</label>
+      <input type="radio" name="random_type" value="1" id="t1">
+      <label for="t1">仅敌人</label>
+      <input type="radio" name="random_type" value="2" id="t2">
+      <label for="t2">仅房间</label>
+      <input type="radio" name="random_type" value="0" id="t0">
+      <label for="t0">手动选择</label>
+    </div>
+    <div class="hint">「全部随机」会自动勾选并锁定下方所有大类/小类；「手动选择」则完全由你配置，切走再切回时会自动恢复你上次的手动选择。</div>
+    <div class="row3" style="margin-top:14px">
+      <div class="field"><label for="seed">随机种子</label>
+        <input type="text" id="seed" name="seed" maxlength="16" autocomplete="off" placeholder="留空 = 随机种子（支持数字+字母）" value=""></div>
+      <div class="field"><label for="gen">生成数量</label>
+        <input type="number" id="gen" min="1" max="9" value="1"></div>
+      <div class="field"><label for="map_type">房间随机类型</label>
+        <select id="map_type" name="random_map_type">
+          <option value="1">1 全区域</option>
+          <option value="2">2 区域内</option>
+          <option value="3">3 完全随机</option>
+        </select></div>
+    </div>
+  </section>
+
+  <!-- 大类：怪物位置 -->
+  <section class="card group wide">
+    <div class="master" onclick="if (event.target.closest('.switch')) return; document.getElementById('random_enemy').click()">
+      <div>
+        <div class="m-title">怪物位置随机 <span class="tag" style="font-size:10px;font-weight:500;color:var(--fg-dim);background:var(--bg2);border:1px solid var(--border);padding:1px 7px;border-radius:999px">大类</span></div>
+        <div class="m-desc">随机调整怪物的出现位置，含 Boss 加入小怪等子选项</div>
+      </div>
+      <span class="switch"><input type="checkbox" name="random_enemy" id="random_enemy"><label class="slider" for="random_enemy"></label></span>
+    </div>
+    <div class="sub" id="sub_enemy">
+      <div>
+        <div class="subtitle">特殊怪物加入小怪</div>
+        <div class="opt"><label>Boss 加入小怪</label><span class="switch"><input type="checkbox" name="boss_enemy" id="boss_enemy"><label class="slider" for="boss_enemy"></label></span></div>
+        <div class="opt"><label>巴洛尔加入小怪</label><span class="switch"><input type="checkbox" name="balore_enemy" id="balore_enemy"><label class="slider" for="balore_enemy"></label></span></div>
+        <div class="opt"><label>尤利乌斯加入小怪</label><span class="switch"><input type="checkbox" name="julius_enemy" id="julius_enemy"><label class="slider" for="julius_enemy"></label></span></div>
+        <div class="opt"><label>混沌加入小怪</label><span class="switch"><input type="checkbox" name="chaos_enemy" id="chaos_enemy"><label class="slider" for="chaos_enemy"></label></span></div>
+        <div class="opt"><label>时之法师加入小怪</label><span class="switch"><input type="checkbox" name="magician_enemy" id="magician_enemy"><label class="slider" for="magician_enemy"></label></span></div>
+        <div class="opt"><label>时之试炼</label><span class="switch"><input type="checkbox" name="magician_secret" id="magician_secret"><label class="slider" for="magician_secret"></label></span></div>
+      </div>
+      <div>
+        <div class="subtitle">怪物分布</div>
+        <div class="opt"><label>原 Boss 随机生成小怪</label><span class="switch"><input type="checkbox" name="enemy_boss_min" id="enemy_boss_min"><label class="slider" for="enemy_boss_min"></label></span></div>
+        <div class="opt"><label>万物皆为怪<div class="desc">所有房间布满随机怪物</div></label><span class="switch"><input type="checkbox" name="enemy_everything" id="enemy_everything"><label class="slider" for="enemy_everything"></label></span></div>
+      </div>
+      <div>
+        <div class="subtitle">混沌玩法</div>
+        <div class="opt"><label>挑战双混沌</label><span class="switch"><input type="checkbox" name="double_chaos" id="double_chaos"><label class="slider" for="double_chaos"></label></span></div>
+        <div class="opt"><label>混沌地图明亮</label><span class="switch"><input type="checkbox" name="light_chaos" id="light_chaos"><label class="slider" for="light_chaos"></label></span></div>
+      </div>
+      <div>
+        <div class="subtitle">通路</div>
+        <div class="opt"><label>存档点快捷道路</label><span class="switch"><input type="checkbox" name="shortcut" id="shortcut"><label class="slider" for="shortcut"></label></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 大类：房间位置 -->
+  <section class="card group wide">
+    <div class="master" onclick="if (event.target.closest('.switch')) return; document.getElementById('random_map').click()">
+      <div>
+        <div class="m-title">房间位置随机 <span class="tag" style="font-size:10px;font-weight:500;color:var(--fg-dim);background:var(--bg2);border:1px solid var(--border);padding:1px 7px;border-radius:999px">大类</span></div>
+        <div class="m-desc">重新连通整个城堡，含排除区域等子选项</div>
+      </div>
+      <span class="switch"><input type="checkbox" name="random_map" id="random_map"><label class="slider" for="random_map"></label></span>
+    </div>
+    <div class="sub" id="sub_map">
+      <div>
+        <div class="subtitle">排除区域</div>
+        <div class="opt"><label>混沌不随机<div class="desc">混沌区域保持原状</div></label><span class="switch"><input type="checkbox" name="random_map_no_chaos" id="random_map_no_chaos"><label class="slider" for="random_map_no_chaos"></label></span></div>
+        <div class="opt"><label>未开发区域不随机</label><span class="switch"><input type="checkbox" name="random_map_no_use" id="random_map_no_use"><label class="slider" for="random_map_no_use"></label></span></div>
+        <div class="opt"><label>BossRush 地图不随机</label><span class="switch"><input type="checkbox" name="random_map_no_bossrush" id="random_map_no_bossrush"><label class="slider" for="random_map_no_bossrush"></label></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 道具位置 -->
+  <section class="card group">
+    <h2>道具位置 <span class="tag">蜡烛 / 挂饰</span></h2>
+    <div class="opt"><label>武器位置</label><span class="switch"><input type="checkbox" name="random_item_weapon" id="random_item_weapon"><label class="slider" for="random_item_weapon"></label></span></div>
+    <div class="opt"><label>防具位置</label><span class="switch"><input type="checkbox" name="random_item_armor" id="random_item_armor"><label class="slider" for="random_item_armor"></label></span></div>
+    <div class="opt"><label>饰品位置</label><span class="switch"><input type="checkbox" name="random_item_accessory" id="random_item_accessory"><label class="slider" for="random_item_accessory"></label></span></div>
+    <div class="opt"><label>消耗品位置</label><span class="switch"><input type="checkbox" name="random_item_item" id="random_item_item"><label class="slider" for="random_item_item"></label></span></div>
+    <div class="opt"><label>加入魂灯<div class="desc">把魂放进魂灯，作为可拾取奖励</div></label><span class="switch"><input type="checkbox" name="random_item_soul" id="random_item_soul"><label class="slider" for="random_item_soul"></label></span></div>
+  </section>
+
+  <!-- 装备数值 -->
+  <section class="card group">
+    <h2>装备数值 / 属性</h2>
+    <div class="opt"><label>武器攻击随机</label><span class="switch"><input type="checkbox" name="random_item_stats_atk" id="random_item_stats_atk"><label class="slider" for="random_item_stats_atk"></label></span></div>
+    <div class="opt"><label>防具防御随机</label><span class="switch"><input type="checkbox" name="random_item_stats_def" id="random_item_stats_def"><label class="slider" for="random_item_stats_def"></label></span></div>
+    <div class="opt"><label>红魂攻击随机</label><span class="switch"><input type="checkbox" name="random_soul_stats_red" id="random_soul_stats_red"><label class="slider" for="random_soul_stats_red"></label></span></div>
+    <div class="opt"><label>武器属性随机<div class="desc">斩击 / 打击 / 突刺 / 火 / 冰 …</div></label><span class="switch"><input type="checkbox" name="attr_weapon" id="attr_weapon"><label class="slider" for="attr_weapon"></label></span></div>
+    <div class="opt"><label>红魂属性随机</label><span class="switch"><input type="checkbox" name="attr_soul_red" id="attr_soul_red"><label class="slider" for="attr_soul_red"></label></span></div>
+  </section>
+
+  <!-- 敌人数值 -->
+  <section class="card group">
+    <h2>敌人数值</h2>
+    <div class="opt"><label>HP</label><span class="switch"><input type="checkbox" name="random_enemy_hp" id="random_enemy_hp"><label class="slider" for="random_enemy_hp"></label></span></div>
+    <div class="opt"><label>MP</label><span class="switch"><input type="checkbox" name="random_enemy_mp" id="random_enemy_mp"><label class="slider" for="random_enemy_mp"></label></span></div>
+    <div class="opt"><label>经验</label><span class="switch"><input type="checkbox" name="random_enemy_exp" id="random_enemy_exp"><label class="slider" for="random_enemy_exp"></label></span></div>
+    <div class="opt"><label>攻击力</label><span class="switch"><input type="checkbox" name="random_enemy_atk" id="random_enemy_atk"><label class="slider" for="random_enemy_atk"></label></span></div>
+    <div class="opt"><label>防御力</label><span class="switch"><input type="checkbox" name="random_enemy_def" id="random_enemy_def"><label class="slider" for="random_enemy_def"></label></span></div>
+    <div class="opt"><label>弱点和抗性</label><span class="switch"><input type="checkbox" name="attr_enemy" id="attr_enemy"><label class="slider" for="attr_enemy"></label></span></div>
+  </section>
+
+  <!-- 敌人掉落 -->
+  <section class="card group">
+    <h2>敌人掉落</h2>
+    <div class="opt"><label>魂完全随机<div class="desc">所有敌人掉落随机魂</div></label><span class="switch"><input type="checkbox" name="random_enemy_soul_all" id="random_enemy_soul_all"><label class="slider" for="random_enemy_soul_all"></label></span></div>
+    <div class="opt"><label>红魂互换</label><span class="switch"><input type="checkbox" name="random_enemy_soul_red" id="random_enemy_soul_red"><label class="slider" for="random_enemy_soul_red"></label></span></div>
+    <div class="opt"><label>蓝魂互换</label><span class="switch"><input type="checkbox" name="random_enemy_soul_blue" id="random_enemy_soul_blue"><label class="slider" for="random_enemy_soul_blue"></label></span></div>
+    <div class="opt"><label>黄魂互换</label><span class="switch"><input type="checkbox" name="random_enemy_soul_yellow" id="random_enemy_soul_yellow"><label class="slider" for="random_enemy_soul_yellow"></label></span></div>
+    <div class="opt"><label>道具掉落互换</label><span class="switch"><input type="checkbox" name="random_enemy_item" id="random_enemy_item"><label class="slider" for="random_enemy_item"></label></span></div>
+    <div class="opt"><label>魂掉率提高</label><span class="switch"><input type="checkbox" name="soul_probability" id="soul_probability"><label class="slider" for="soul_probability"></label></span></div>
+    <div class="opt"><label>道具掉率提高</label><span class="switch"><input type="checkbox" name="item_probability" id="item_probability"><label class="slider" for="item_probability"></label></span></div>
+  </section>
+
+  <!-- 特殊模式 -->
+  <section class="card group">
+    <h2>特殊模式</h2>
+    <div class="opt"><label>随机 2~5 倍经验</label><span class="switch"><input type="checkbox" name="mutil_exp" id="mutil_exp"><label class="slider" for="mutil_exp"></label></span></div>
+    <div class="opt"><label>获得混沌戒指<div class="desc">开局装备混沌戒指</div></label><span class="switch"><input type="checkbox" name="ringchaos" id="ringchaos"><label class="slider" for="ringchaos"></label></span></div>
+    <div class="opt"><label>剧情三魂<div class="desc">开局赠送剧情三魂 (Malphas/Skula/Giant Bat)</div></label><span class="switch"><input type="checkbox" name="soul_start" id="soul_start"><label class="slider" for="soul_start"></label></span></div>
+    <div class="opt"><label>获得剧情魂<div class="desc">开局赠送古文书所需三魂</div></label><span class="switch"><input type="checkbox" name="mainsoul" id="mainsoul"><label class="slider" for="mainsoul"></label></span></div>
+    <div class="opt"><label>古文书三魂随机<div class="desc">三本古文书对应的魂随机</div></label><span class="switch"><input type="checkbox" name="main_soul_random" id="main_soul_random"><label class="slider" for="main_soul_random"></label></span></div>
+    <div class="opt"><label>取消三魂检测<div class="desc">不需要三魂也能推剧情</div></label><span class="switch"><input type="checkbox" name="main_soul_pass" id="main_soul_pass"><label class="slider" for="main_soul_pass"></label></span></div>
+  </section>
+
+  <!-- 杂项 -->
+  <section class="card group">
+    <h2>杂项 <span class="tag">系统</span></h2>
+    <div class="opt"><label>一周目允许跳过对话</label><span class="switch"><input type="checkbox" name="skipdialog" id="skipdialog"><label class="slider" for="skipdialog"></label></span></div>
+    <div class="opt"><label>开启 Debug 模式</label><span class="switch"><input type="checkbox" name="opendebug" id="opendebug"><label class="slider" for="opendebug"></label></span></div>
+    <div class="opt"><label>商店随机<div class="desc">大锤商店货架随机化</div></label><span class="switch"><input type="checkbox" name="random_shop" id="random_shop"><label class="slider" for="random_shop"></label></span></div>
+  </section>
+</div>
+
+<div id="opt-popup" class="popup" aria-hidden="true">
+  <span class="popup-close" id="opt-popup-close" title="关闭">×</span>
+  <div class="popup-title" id="opt-popup-title"></div>
+  <div class="popup-text" id="opt-popup-text"></div>
+</div>
+
+<div class="actions">
+  <button id="genBtn">生成随机 ROM</button>
+  <div id="status">选择要随机的内容，然后点击生成。浏览器会自动下载 ZIP（内含 ROM + Info 文本）。</div>
+</div>
+
+<footer>提示：种子留空则每次随机生成数字+字母种子；填相同种子可复现同一结果。多个数量时会依次下载多个 ZIP。<span class="lp-hint">长按任意选项可查看介绍说明。</span></footer>
+
+<script>
+(function () {
+  const btn = document.getElementById('genBtn');
+  const status = document.getElementById('status');
+  const form = document.getElementById('typePills');
+  const seedInput = document.getElementById('seed');
+  const genInput = document.getElementById('gen');
+
+  function setMsg(text, cls) {
+    status.className = cls || '';
+    status.innerHTML = '';
+    const t = document.createElement('div');
+    t.textContent = text;
+    status.appendChild(t);
+  }
+
+  const PRESETS = {
+    3: {
+      on: ['random_map', 'random_item_weapon', 'random_item_armor',
+           'random_item_accessory', 'random_item_item',
+           'random_enemy_hp', 'random_enemy_mp', 'random_enemy_exp',
+           'random_enemy_atk', 'random_enemy_def', 'attr_enemy',
+           'random_enemy_soul_all', 'random_enemy_item',
+           'soul_probability', 'item_probability',
+           'random_item_stats_atk', 'random_item_stats_def',
+           'random_soul_stats_red', 'attr_weapon', 'attr_soul_red',
+           'random_shop']
+    },
+    1: {
+      on: ['random_enemy_hp', 'random_enemy_mp', 'random_enemy_exp',
+           'random_enemy_atk', 'random_enemy_def', 'attr_enemy',
+           'random_enemy_soul_all', 'random_enemy_item',
+           'soul_probability', 'item_probability']
+    },
+    2: {
+      on: ['random_map']
+    }
+  };
+  const ALL_SWITCHES = Array.from(document.querySelectorAll('.switch input[type=checkbox]'));
+  const MASTER_SWITCHES = ['random_enemy', 'random_map'];
+
+  // 互斥组：组内同时只能开启一个；开启一个时，其余自动勾掉并锁死（视觉置灰），直到开启的那个被关闭。
+  // 优先级即数组顺序，与引擎 runRandomizer.js 的 MUTEX_GROUPS 保持一致。
+  const MUTEX_GROUPS = [
+    ['random_enemy_soul_all', 'random_enemy_soul_red', 'random_enemy_soul_blue', 'random_enemy_soul_yellow'],
+    ['mainsoul', 'soul_start'],
+  ];
+  let mutexLocked = new Set();
+  // 记录最近一次被用户手动切换的开关；互斥组内有多个开启项时，以“最后点击的”为胜者。
+  let lastToggled = null;
+
+  /**
+   * 互斥锁定/解锁：
+   *  - 组内有开启项时，其余成员勾掉并锁定（记住原状态存到 dataset.mutexPrev）；
+   *  - 组内全部关闭时，把之前被锁的成员还原（恢复勾选 + 解除禁用）；
+   *  - 还原后子项的主开关（怪物/房间大类）状态仍由 syncSubs 决定。
+   */
+  function enforceMutex() {
+    const prevLocked = new Set(mutexLocked);
+    const next = new Set();
+    MUTEX_GROUPS.forEach(group => {
+      const on = group.filter(n => getSwitch(n) && getSwitch(n).checked);
+      if (on.length === 0) return;
+      const keep = (on.includes(lastToggled) && lastToggled) || group.find(n => on.includes(n));
+      group.forEach(n => {
+        if (n === keep) return;
+        if (getSwitch(n)) next.add(n);
+      });
+    });
+    lastToggled = null;
+
+    document.querySelectorAll('.switch input[type=checkbox]').forEach(s => {
+      const opt = s.closest('.opt');
+      if (!opt) return;
+      if (next.has(s.name)) {
+        // 锁定：仅在首次锁定时保存原状态，之后不覆盖
+        if (!prevLocked.has(s.name)) {
+          s.dataset.mutexPrev = s.checked ? '1' : '0';
+        }
+        s.checked = false;
+        s.disabled = true;
+        opt.classList.add('mutex-off');
+      } else {
+        // 仅还原「被互斥解锁」的开关（此前在互斥锁集合内）：恢复勾选并解除禁用。
+        // 其余开关保持现状，避免覆盖 applyPreset 的预设锁定（disabled=true）。
+        if (prevLocked.has(s.name)) {
+          if (s.dataset.mutexPrev === '1') {
+            s.checked = true;
+          }
+          s.disabled = false;
+        }
+        delete s.dataset.mutexPrev;
+        opt.classList.remove('mutex-off');
+      }
+    });
+
+    mutexLocked = next;
+    syncSubs();
+  }
+
+  // 手动选择快照：切到预设模式时保存手动配置，切回「手动选择」时恢复。
+  const SNAPSHOT_KEY = 'aos-manual-options';
+  let manualActive = false;
+  let manualSnapshot = null;
+
+  // 页面缓存：把整套选择（随机范围 + 所有开关 + 种子/数量/房间类型）存进 localStorage，
+  // 下次打开页面自动恢复上次的选择。
+  const CACHE_KEY = 'aos-options-cache';
+
+  function collectState() {
+    const checked = {};
+    ALL_SWITCHES.forEach(s => { checked[s.name] = s.checked; });
+    const radio = form.querySelector('input[name=random_type]:checked');
+    return {
+      random_type: radio ? Number(radio.value) : 3,
+      checked,
+      seed: seedInput.value,
+      gen: genInput.value,
+      map_type: (document.getElementById('map_type') || {}).value || '1',
+    };
+  }
+
+  function saveCache() {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(collectState())); } catch (e) { /* 忽略存储失败 */ }
+  }
+
+  // 恢复缓存；返回是否成功恢复。随机范围是 1/2/3 时由 applyPreset 再套一次预设锁，
+  // 自动纠正旧缓存里已不存在的预设选项；手动选择(0)则把勾选状态喂给 manualSnapshot。
+  function restoreCache() {
+    let cache = null;
+    try { cache = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch (e) { cache = null; }
+    if (!cache || typeof cache.random_type === 'undefined' || !cache.checked) {
+      return false;
+    }
+    const radio = form.querySelector('input[name=random_type][value="' + cache.random_type + '"]');
+    if (radio) {
+      radio.checked = true;
+    }
+    ALL_SWITCHES.forEach(s => {
+      if (cache.checked[s.name] !== undefined) {
+        s.checked = !!cache.checked[s.name];
+      }
+    });
+    if (cache.random_type === 0) {
+      manualSnapshot = {};
+      ALL_SWITCHES.forEach(s => { manualSnapshot[s.name] = s.checked; });
+    }
+    if (cache.seed !== undefined) seedInput.value = cache.seed;
+    if (cache.gen !== undefined) genInput.value = cache.gen;
+    const mt = document.getElementById('map_type');
+    if (mt && cache.map_type !== undefined) mt.value = cache.map_type;
+    return true;
+  }
+
+  function loadSnapshot() {
+    try {
+      const raw = localStorage.getItem(SNAPSHOT_KEY);
+      manualSnapshot = raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      manualSnapshot = null;
+    }
+  }
+
+  function saveSnapshot() {
+    manualSnapshot = {};
+    ALL_SWITCHES.forEach(s => { manualSnapshot[s.name] = s.checked; });
+    try { localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(manualSnapshot)); } catch (e) { /* 忽略存储失败 */ }
+  }
+
+  function getSwitch(name) {
+    return document.querySelector('.switch input[name="' + name + '"]');
+  }
+
+  function syncSubs() {
+    // 大类主开关控制组内子项是否可交互
+    const map = { random_enemy: 'sub_enemy', random_map: 'sub_map' };
+    Object.keys(map).forEach(name => {
+      const sub = document.getElementById(map[name]);
+      const on = getSwitch(name) && getSwitch(name).checked;
+      sub.classList.toggle('off', !on);
+      sub.querySelectorAll('.switch input[type=checkbox]').forEach(s => {
+        const presetLocked = s.closest('.opt') && s.closest('.opt').classList.contains('locked');
+        if (presetLocked) return; // 预设锁定的选项保持锁定状态
+        if (mutexLocked.has(s.name)) { s.disabled = true; return; } // 互斥锁定的选项保持锁定
+        s.disabled = !on;
+      });
+    });
+  }
+
+  function applyPreset() {
+    const type = Number((form.querySelector('input[name=random_type]:checked') || {}).value);
+    const preset = PRESETS[type];
+    const wasManual = manualActive;
+    manualActive = (type === 0);
+
+    if (manualActive) {
+      // 进入「手动选择」：恢复上次手动配置；没有记录则全部关闭（清掉预设勾选）
+      ALL_SWITCHES.forEach(s => {
+        s.checked = manualSnapshot ? !!manualSnapshot[s.name] : false;
+      });
+    } else if (wasManual) {
+      // 离开「手动选择」：记住本次手动配置，供下次恢复
+      saveSnapshot();
+    }
+
+    ALL_SWITCHES.forEach(s => {
+      const opt = s.closest('.opt');
+      const isMaster = MASTER_SWITCHES.includes(s.name);
+      const locked = !!preset;
+      s.disabled = locked;
+      if (locked) {
+        s.checked = preset.on.includes(s.name);
+      }
+      if (opt) {
+        opt.classList.toggle('locked', locked);
+        opt.classList.toggle('disabled', locked && !preset.on.includes(s.name));
+        let tag = opt.querySelector('.preset-tag');
+        if (locked) {
+          if (!tag) {
+            tag = document.createElement('span');
+            tag.className = 'preset-tag';
+            tag.textContent = '预设';
+            opt.querySelector('label').appendChild(tag);
+          }
+        } else if (tag) {
+          tag.remove();
+        }
+      }
+    });
+
+    // 预设/手动切换会重设所有勾选状态，清掉互斥保存的旧状态，再按新状态重算互斥
+    document.querySelectorAll('.switch input[type=checkbox]').forEach(s => {
+      delete s.dataset.mutexPrev;
+    });
+    lastToggled = null;
+    enforceMutex();
+
+    if (type === 3) {
+      setMsg('「全部随机」预设已勾选并锁定：房间 + 道具位置 + 敌人数值/魂/掉落 + 装备数值 + 商店随机。切换到「手动选择」可自由配置。');
+    } else if (type === 1) {
+      setMsg('「仅敌人」预设已勾选并锁定：敌人数值 + 魂 + 掉落。切换到「手动选择」可自由配置。');
+    } else if (type === 2) {
+      setMsg('「仅房间」预设已勾选并锁定：房间位置随机。切换到「手动选择」可自由配置。');
+    } else {
+      setMsg('手动选择：先打开上面的「怪物位置随机 / 房间位置随机」大类，再勾选下面的小类。预设勾选的选项已自动关闭，你上次的手动配置已恢复保留。');
+    }
+  }
+
+  document.querySelectorAll('.master input[type=checkbox]').forEach(m => {
+    m.addEventListener('change', syncSubs);
+  });
+  document.querySelectorAll('.switch input[type=checkbox]').forEach(s => {
+    s.addEventListener('change', () => {
+      lastToggled = s.name;
+      if (MASTER_SWITCHES.includes(s.name)) syncSubs();
+      else enforceMutex();
+    });
+  });
+  form.addEventListener('change', applyPreset);
+  // 任意控件变更（radio/checkbox/输入框）冒泡到 document 后统一保存缓存；
+  // 冒泡顺序保证 applyPreset / enforceMutex 已先把状态收尾（含互斥勾掉/还原）再落盘。
+  document.addEventListener('change', saveCache);
+  // 文本/数字输入（种子、数量）边打边存，避免未失焦就关页丢失
+  document.addEventListener('input', saveCache);
+
+  function init() {
+    // 始终加载手动快照，供切回「手动选择」时恢复上次手动配置；
+    // 有页面缓存则整体恢复（随机范围/种子/数量/房间类型），type 0 时 restoreCache 会以
+    // 缓存的勾选状态覆盖 manualSnapshot（更新鲜），其余类型保留快照备用。
+    loadSnapshot();
+    restoreCache();
+    applyPreset();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  // ===== 长按选项介绍 =====
+  const INTROS = {
+    // 随机范围
+    t3: '全部随机：房间 + 道具 + 敌人数值/魂/掉落 + 装备数值 + 商店随机，自动勾选并锁定下方所有小类。',
+    t1: '仅敌人：随机敌人数值、魂掉落、道具掉落。',
+    t2: '仅房间：只随机房间（门）位置。',
+    t0: '手动选择：完全由你逐个配置下方的选项。',
+    seed: '填入种子可复现同一个结果（支持数字+字母混合，如 9kX2q8Ab）；留空则随机生成 8 位数字+字母种子。',
+    gen: '本次生成的数量（1~9 个），多个时会依次下载多个 ZIP。',
+    map_type: '房间随机类型：1=全城堡跨区洗牌（全城堡门一次随机配对）；2=区域内房间随机（跨区域连接不变）；3=房间完全随机（全部门参与，仅保证方向匹配）。',
+    // 大类
+    random_enemy: '把怪物打乱/随机安放到各房间。下方小类可进一步定制特殊怪物、混沌玩法、快捷通路。',
+    random_map: '重新连通整个城堡（房间位置随机）。下方小类可指定哪些区域保持原样不参与洗牌。',
+    // 特殊怪物加入小怪
+    boss_enemy: 'Boss 会以普通小怪的形式出现在普通房间中。',
+    balore_enemy: '巴洛尔（巨型铠甲）作为小怪出现在普通房间。',
+    julius_enemy: '尤利乌斯（吸血鬼猎人）作为小怪出现在普通房间。',
+    chaos_enemy: '混沌作为小怪出现在普通房间。',
+    magician_enemy: '时之法师作为小怪出现在普通房间。',
+    magician_secret: 'Boss 战追加时之法师（兔子）群，形成时间试炼挑战。',
+    // 怪物分布
+    enemy_boss_min: '原本的 Boss 也随机为小怪，Boss 房内容更不可预测。',
+    enemy_everything: '所有实体都可能成为怪物，房间布满随机怪物。',
+    // 混沌玩法
+    double_chaos: '混沌 Boss 同时出现两个，双倍难度。',
+    light_chaos: '调亮混沌区域的地图，看得更清楚。',
+    // 通路
+    shortcut: '每个存档房与城堡另一端的区域房双向接通，形成快捷通道，赶路更省时。',
+    // 排除区域
+    random_map_no_chaos: '混沌区域保持原样，不参与房间（门）洗牌。',
+    random_map_no_use: '未开发区域保持原样。未开发房间不在房间表内，天然不参与洗牌，此选项为显式保证。',
+    random_map_no_bossrush: 'BossRush 地图保持原样。BossRush 为独立第 13 区，不在房间表内，此选项为显式保证。',
+    // 道具位置
+    random_item_weapon: '随机武器在城堡中的位置（蜡烛/挂饰）。',
+    random_item_armor: '随机防具在城堡中的位置。',
+    random_item_accessory: '随机饰品在城堡中的位置。',
+    random_item_item: '随机消耗品在城堡中的位置。',
+    random_item_soul: '把魂放入魂灯，作为可拾取奖励。',
+    // 装备数值
+    random_item_stats_atk: '随机所有武器的攻击力数值。',
+    random_item_stats_def: '随机所有防具的防御力数值。',
+    random_soul_stats_red: '随机所有红魂的攻击力数值。',
+    attr_weapon: '随机武器的攻击属性（斩/火/水/雷/暗/圣/毒/咒/石）。',
+    attr_soul_red: '随机红魂的攻击属性。',
+    // 敌人数值
+    random_enemy_hp: '随机所有怪物的 HP。',
+    random_enemy_mp: '随机所有怪物的 MP。',
+    random_enemy_exp: '随机所有怪物的经验值。可与「随机 2~5 倍经验」「经验倍率」同时开启；但多者叠加时，部分怪物经验可能异常。',
+    random_enemy_atk: '随机所有怪物的攻击力。',
+    random_enemy_def: '随机所有怪物的防御力。',
+    attr_enemy: '随机所有怪物的弱点与抗性属性。',
+    // 敌人掉落
+    random_enemy_soul_all: '所有怪物的魂掉落完全随机（与下方红/蓝/黄魂互换互斥，同组只能开启一个）。',
+    random_enemy_soul_red: '红魂的掉落归属随机互换。',
+    random_enemy_soul_blue: '蓝魂的掉落归属随机互换。',
+    random_enemy_soul_yellow: '黄魂的掉落归属随机互换。',
+    random_enemy_item: '随机怪物的道具掉落。',
+    soul_probability: '提高魂的掉落概率。',
+    item_probability: '提高道具的掉落概率。',
+    // 特殊模式
+    mutil_exp: '击杀结算时经验 ×随机 2~5 倍（代码补丁，保留怪物原始经验值）。可与「经验随机」同时开启；但两者叠加可能使部分怪物经验异常。',
+    ringchaos: '开局获得混沌戒指。',
+    soul_start: '开局赠送剧情三魂 (Malphas/Skula/Giant Bat)。',
+    mainsoul: '开局赠送古文书所需三魂（红44 Flame Demon / 蓝2 Giant Bat / 黄7 Succubus）。与「开局赠魂」互斥，同组只能开启一个；若同时开启「古文书三魂随机」，则赠送随机出的三魂。',
+    main_soul_random: '三本古文书对应的魂随机，古文书检测改为随机三魂。配合「获得剧情魂」可开局直接拿到对应魂。',
+    main_soul_pass: '跳过剧情三魂检查，不需要集齐三魂也能推进剧情。',
+    // 杂项
+    skipdialog: '第一周目即可跳过对话/过场。',
+    opendebug: '开启游戏内置调试菜单。',
+    random_shop: '大锤商店货架随机化。',
+  };
+
+  const popup = document.getElementById('opt-popup');
+  const popupTitle = document.getElementById('opt-popup-title');
+  const popupText = document.getElementById('opt-popup-text');
+  const popupClose = document.getElementById('opt-popup-close');
+  let holdTimer = null;
+  let holdInfo = null;
+
+  function labelTitle(el) {
+    const lab = el.querySelector('label');
+    if (!lab) return '';
+    const c = lab.cloneNode(true);
+    c.querySelectorAll('.desc, .preset-tag').forEach(n => n.remove());
+    return c.textContent.replace(/\s+/g, ' ').trim();
+  }
+
+  function masterTitle(el) {
+    const t = el.querySelector('.m-title');
+    if (!t) return '';
+    const c = t.cloneNode(true);
+    const tag = c.querySelector('.tag');
+    if (tag) tag.remove();
+    return c.textContent.trim();
+  }
+
+  function pickIntro(e) {
+    const opt = e.target.closest('.opt');
+    if (opt) {
+      const inp = opt.querySelector('.switch input');
+      if (inp && INTROS[inp.name]) return { title: labelTitle(opt), text: INTROS[inp.name] };
+      return null;
+    }
+    const master = e.target.closest('.master');
+    if (master) {
+      const inp = master.querySelector('input[type=checkbox]');
+      if (inp && INTROS[inp.name]) return { title: masterTitle(master), text: INTROS[inp.name] };
+      return null;
+    }
+    const pill = e.target.closest('.pills label');
+    if (pill && INTROS[pill.htmlFor]) return { title: pill.textContent.trim(), text: INTROS[pill.htmlFor] };
+    const field = e.target.closest('.field');
+    if (field) {
+      const lab = field.querySelector('label');
+      if (lab && INTROS[lab.htmlFor]) return { title: lab.textContent.trim(), text: INTROS[lab.htmlFor] };
+    }
+    return null;
+  }
+
+  function showPopup(x, y, info) {
+    popupTitle.textContent = info.title;
+    popupText.textContent = info.text;
+    popup.classList.add('show');
+    popup.setAttribute('aria-hidden', 'false');
+    const pw = popup.offsetWidth || 260;
+    const ph = popup.offsetHeight || 120;
+    let px = x + 12;
+    if (px + pw > window.innerWidth - 8) px = window.innerWidth - pw - 8;
+    px = Math.max(8, px);
+    let py = y + 18;
+    if (py + ph > window.innerHeight - 8) py = y - ph - 14;
+    py = Math.max(8, py);
+    popup.style.left = px + 'px';
+    popup.style.top = py + 'px';
+    if (navigator.vibrate) navigator.vibrate(15);
+  }
+
+  function cancelHold() {
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+    holdInfo = null;
+  }
+
+  function hidePopup() {
+    cancelHold();
+    popup.classList.remove('show');
+    popup.setAttribute('aria-hidden', 'true');
+  }
+
+  document.addEventListener('pointerdown', e => {
+    if (popup.classList.contains('show')) { hidePopup(); return; }
+    const info = pickIntro(e);
+    if (!info) return;
+    holdInfo = { info, x: e.clientX, y: e.clientY };
+    holdTimer = setTimeout(() => {
+      if (holdInfo) showPopup(holdInfo.x, holdInfo.y, holdInfo.info);
+    }, 500);
+  });
+
+  document.addEventListener('pointermove', e => {
+    if (!holdInfo) return;
+    const dx = e.clientX - holdInfo.x;
+    const dy = e.clientY - holdInfo.y;
+    if (dx * dx + dy * dy > 100) cancelHold();
+  });
+
+  ['pointerup', 'pointercancel'].forEach(ev => document.addEventListener(ev, cancelHold));
+  document.addEventListener('contextmenu', e => { if (pickIntro(e)) e.preventDefault(); });
+  popupClose.addEventListener('click', e => { e.stopPropagation(); hidePopup(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') hidePopup(); });
+
+  btn.addEventListener('click', async () => {
+    const fd = new FormData();
+    form.querySelectorAll('input[type=radio]').forEach(r => {
+      if (r.checked) fd.append(r.name, r.value);
+    });
+    document.querySelectorAll('.switch input[type=checkbox]').forEach(c => {
+      if (c.checked) fd.append(c.name, '1');
+    });
+    const mapType = document.getElementById('map_type').value;
+    fd.append('random_map_type', mapType);
+    if (seedInput.value !== '') fd.append('seed', seedInput.value);
+    const gen = Math.max(1, Math.min(9, parseInt(genInput.value, 10) || 1));
+
+    btn.disabled = true;
+    setMsg('正在生成 ' + gen + ' 个 ROM，请稍候…');
+    let seedUsed = '';
+    try {
+      for (let i = 0; i < gen; i++) {
+        setMsg('正在生成第 ' + (i + 1) + ' / ' + gen + ' 个 ROM…');
+        const resp = await fetch('/ajax.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams(fd)
+        });
+        if (!resp.ok) {
+          const txt = await resp.text();
+          throw new Error(txt || ('HTTP ' + resp.status));
+        }
+        const blob = await resp.blob();
+        const cd = resp.headers.get('Content-Disposition') || '';
+        const m = cd.match(/filename="([^"]+)"/);
+        const name = m ? m[1] : ('random_' + Date.now() + '.zip');
+        const sm = /^random_(.+)\.zip$/.exec(name);
+        if (sm) {
+          seedUsed = sm[1];
+          // 不回填输入框：留空即每次随机新种子，输入框保持用户手动输入
+        }
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(a.href);
+        a.remove();
+        if (gen > 1) await new Promise(r => setTimeout(r, 600));
+      }
+      setMsg(gen + ' 个 ROM 已生成并下载。' + (seedUsed ? '本次种子：' + seedUsed : ''), 'ok');
+    } catch (e) {
+      setMsg('生成失败：' + e.message);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+</body>
+</html>
