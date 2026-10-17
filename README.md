@@ -26,7 +26,12 @@
 
 ## 快速开始
 
-环境要求：**Linux**（自带捆绑的 Node.js，无需预装）；批量脚本需 `curl` 与 `unzip`。
+环境要求：**Linux**；批量脚本需 `curl` 与 `unzip`。
+
+> [!IMPORTANT]
+> 仓库**不附带 ROM 与 Node.js 运行时**，使用前请自行准备：
+> 1. 将合法获得的九柳汉化版 ROM（CRC32 `22EFD2B9`）放入 `engine/rom/emcxyywq.gba`；
+> 2. 自行安装 Node.js，并将 `node` 可执行文件放到 `runtime/node/bin/node`（或修改 `启动服务.sh` 中的 node 路径指向系统 Node）。
 
 ```bash
 ./启动服务.sh          # 启动本地服务（端口 18688）
@@ -115,16 +120,15 @@ aos-rom-randomizer/
 ├── README.md                    项目介绍（本文件）
 ├── 启动服务.sh / 停止服务.sh     服务启停脚本
 ├── 晓月随机rom生成脚本.sh         批量生成脚本（兼容 fbigames 原版）
-├── emcxyywq.gba                 原始 ROM（九柳汉化版，CRC32 22EFD2B9）
 ├── engine/                      Node 服务与随机化引擎
 │   ├── server.js                HTTP 服务（18688）与 ZIP 打包
 │   ├── options.js               65 个选项的唯一定义（驱动前后端）
 │   ├── lib/                     CN 功能模块与编排器
 │   ├── public/index.html        网页界面（含长按介绍弹窗）
-│   ├── rom/                     随机化输入 ROM
+│   ├── rom/                     【自行准备】随机化输入 ROM（不在仓库内）
 │   └── vendor/                  随机化引擎（源自 AoSRando，本地化适配）
 ├── tests/                       回归测试脚本（Node）
-└── runtime/                     捆绑的 Node.js 运行时
+└── runtime/                     【自行准备】Node.js 运行时（不在仓库内）
 
 其他目录：../晓月圆舞曲随机ROM/ 保留参考材料（refs/ 参考项目源码 + ROM 偏移总结文档）
 ```
