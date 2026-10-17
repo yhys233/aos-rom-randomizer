@@ -149,7 +149,8 @@ runtime/node/bin/node tests/full-regress.js
 
 ## 参考与致谢
 
-- 随机化引擎源自 **AoSRando**（`refs/AoSRando`、`refs/aos_rando`、`refs/aros`）。
+- 随机化引擎源自 **AoSRando**（`refs/AoSRando`、`refs/aos_rando`、`refs/aros`，MIT 协议）。
+- 随机数生成使用 **mersenne-twister**（MT19937，松本行真/西村拓士，BSD 风格协议）。
 - 基于**九柳汉化版**《恶魔城：晓月圆舞曲》ROM（CRC32 `22EFD2B9`）。
 - ROM 结构偏移参考项目内两篇总结文档：
   - `恶魔城晓月圆舞曲_ROM偏移总结.txt`
